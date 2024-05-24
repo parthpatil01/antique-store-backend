@@ -3,16 +3,16 @@ const router = express.Router();
 const Product = require('../models/Product');
 const multer = require('multer');
 const xlsx = require('xlsx');
-
+const path = require('path');
 router.use(express.json());
 
 // Multer configuration
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Specify the directory where uploaded files will be stored
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
   },
-  filename: function (req, file, cb) {
-    cb(null, file.originalname); // Specify the filename for uploaded files
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname)); // Append the file extension
   }
 });
 
@@ -52,14 +52,13 @@ router.get('/', async (req, res) => {
 
 
 // Add a new product
-router.post('/', upload.single('image'), async (req, res) => {
-  
+router.post('/', upload.array('images', 4), async (req, res) => { // 'images' is the field name in the form, and 10 is the maximum number of files
   try {
-    let imagePath = ''; // Initialize imagePath
+    let imagePaths = []; // Initialize an array to hold image paths
 
-    // Check if req.file is present (file upload)
-    if (req.file) {
-      imagePath = '/uploads/' + req.file.filename; // Assuming uploads directory is used to store images
+    // Check if req.files is present (files upload)
+    if (req.files) {
+      imagePaths = req.files.map(file => '/uploads/' + file.filename); // Assuming uploads directory is used to store images
     }
 
     const product = new Product({
@@ -69,7 +68,7 @@ router.post('/', upload.single('image'), async (req, res) => {
       category: req.body.category,
       price: req.body.price,
       quantity: req.body.quantity,
-      imagePath: imagePath // Save imagePath in the database
+      images: imagePaths // Save imagePaths in the database
     });
 
     const savedProduct = await product.save();
