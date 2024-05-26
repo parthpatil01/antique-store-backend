@@ -119,7 +119,8 @@ router.post('/', upload.array('images', 4), async (req, res) => { // 'images' is
       description: req.body.description,
       category: req.body.category,
       price: req.body.price,
-      quantity: req.body.quantity,
+      discount: req.body.discount,
+      status: req.body.status,
       images: imagePaths // Save imagePaths in the database
     });
 

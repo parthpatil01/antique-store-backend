@@ -8,9 +8,9 @@ const productSchema = new mongoose.Schema({
   description: { type: String, required: true },
   category: { type: String, required: true },
   price: { type: Number, required: true },
-  quantity: { type: Number, required: true },
-  imagePath: { type: String }, // Path to the image file in the server file system
-  images:{type:Array}
+  images:{type:Array},
+  discount:{type:Number},
+  status:{type:String}
 });
 
 module.exports = mongoose.model('Product', productSchema);
