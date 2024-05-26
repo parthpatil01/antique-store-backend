@@ -5,21 +5,71 @@ const multer = require('multer');
 const xlsx = require('xlsx');
 const path = require('path');
 router.use(express.json());
+const admin = require('firebase-admin');
 
-// Multer configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'public/uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // Append the file extension
-  }
+// Firebase initialization
+const serviceAccountKey = {
+  "type": "service_account",
+  "project_id": process.env.PROJECT_ID,
+  "private_key_id": process.env.PRIVATE_KEY_ID,
+  "private_key": process.env.PRIVATE_KEY,
+  "client_email": process.env.CLIENT_EMAIL,
+  "client_id": process.env.CLIENT_ID,
+  "auth_uri": process.env.AUTH_URI,
+  "token_uri": process.env.TOKEN_URI,
+  "auth_provider_x509_cert_url": process.env.AUTH_PROVIDER_X509_CERT_URL,
+  "client_x509_cert_url": process.env.CLIENT_X509_CERT_URL,
+  "universe_domain": process.env.UNIVERSE_DOMAIN
+};  
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccountKey),
+  storageBucket: 'gs://antique-store-78cdf.appspot.com' // Replace with your bucket name
 });
 
-const upload = multer({ storage: storage });
+const bucket = admin.storage().bucket();
+
+// Function to upload image to Firebase Storage and get the URL
+const uploadImageToFirebase = async (file) => {
+
+  const fileUpload = bucket.file(file.originalname);
+
+  const stream = fileUpload.createWriteStream({
+    metadata: {
+      contentType: file.mimetype,
+    },
+  });
+
+  return new Promise((resolve, reject) => {
+    stream.on('error', (error) => {
+      console.error('Stream error:', error);
+      reject(error);
+    });
+
+    stream.on('finish', async () => {
+      try {
+        await fileUpload.makePublic();
+        const fileUrl = `https://storage.googleapis.com/${bucket.name}/${file.originalname}`;
+        resolve(fileUrl);
+      } catch (error) {
+        console.error('Error making file public:', error);
+        reject(error);
+      }
+    });
+
+    stream.end(file.buffer);
+  });
+};
+
+
 
 const memoryStorage = multer.memoryStorage();
 const memoryUpload = multer({ storage: memoryStorage });
+
+// Configure Multer to store files in memory
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
 
 // Function to add image URL to product object
 const addImageURL = (product, req) => ({
@@ -55,10 +105,12 @@ router.get('/', async (req, res) => {
 router.post('/', upload.array('images', 4), async (req, res) => { // 'images' is the field name in the form, and 10 is the maximum number of files
   try {
     let imagePaths = []; // Initialize an array to hold image paths
-
+    const files = req.files; // Assume the files are available in req.files 
+    
     // Check if req.files is present (files upload)
-    if (req.files) {
-      imagePaths = req.files.map(file => '/uploads/' + file.filename); // Assuming uploads directory is used to store images
+    if (files) {
+      // Upload images to Firebase and get the URLs
+      imagePaths = await Promise.all(files.map(file => uploadImageToFirebase(file)));
     }
 
     const product = new Product({
@@ -80,7 +132,7 @@ router.post('/', upload.array('images', 4), async (req, res) => { // 'images' is
 });
 
 //Update a product
-router.put('/', upload.single('image'), async (req, res) => {
+router.put('/', async (req, res) => {
   const productsrno = req.query.productsrno;
   
   try {
@@ -96,9 +148,14 @@ router.put('/', upload.single('image'), async (req, res) => {
     product.category = req.body.category;
     product.price = req.body.price;
     product.quantity = req.body.quantity;
-    if (req.file) {
-      product.imagePath = '/uploads/' + req.file.filename;
+    
+    let imagePaths = [];
+
+    if (req.files) {
+      imagePaths = req.files.map(file => '/public/uploads/' + file.filename); // Assuming uploads directory is used to store images
     }
+
+    product.images= imagePaths;
 
     // Save the updated product
     const updatedProduct = await product.save();
