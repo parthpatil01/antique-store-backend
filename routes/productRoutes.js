@@ -139,8 +139,17 @@ router.post('/bulk-export', memoryUpload.single('file'), (req, res) => {
   const sheetName = workbook.SheetNames[0];
 
   const excelData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+  // Convert image paths from string to array
+  const productsData = excelData.map(product => {
+    if (typeof product.images === 'string') {
+      product.images = product.images.split(',').map(path => path.trim());
+    }
+    return product;
+  });
+
   
-  Product.insertMany(excelData)
+  Product.insertMany(productsData)
       .then(() => {
           res.status(200).send('Data uploaded successfully');
       })
