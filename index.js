@@ -19,7 +19,7 @@ app.use(cors());
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/users', require('./routes/usersRoutes'));
 
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static('public/uploads'));
 
 
 // Connect to MongoDB
