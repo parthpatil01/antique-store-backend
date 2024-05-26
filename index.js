@@ -21,7 +21,7 @@ app.use('/api/users', require('./routes/usersRoutes'));
 
 app.use('/uploads', express.static('public/uploads'));
 
-
+ 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
