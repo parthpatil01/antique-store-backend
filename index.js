@@ -23,7 +23,7 @@ app.use('/uploads', express.static('public/uploads'));
 
 
 // Connect to MongoDB
-mongoose.connect('mongodb+srv://edutools123:Fake%40auth@cluster0.noqxrfh.mongodb.net/antique-admin?retryWrites=true&w=majority', {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
