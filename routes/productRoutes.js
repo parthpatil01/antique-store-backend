@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
+const User = require("../models/User");
+
 const multer = require('multer');
 const xlsx = require('xlsx');
 const path = require('path');
@@ -20,7 +22,7 @@ const serviceAccountKey = {
   "auth_provider_x509_cert_url": process.env.AUTH_PROVIDER_X509_CERT_URL,
   "client_x509_cert_url": process.env.CLIENT_X509_CERT_URL,
   "universe_domain": process.env.UNIVERSE_DOMAIN
-};  
+};
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccountKey),
@@ -71,12 +73,6 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 
-// Function to add image URL to product object
-const addImageURL = (product, req) => ({
-  ...product._doc,
-  imagePath: `${req.protocol}://${req.get('host')}${product.imagePath}`
-});
-
 // Route to fetch all products or a single product by serial number
 router.get('/', async (req, res) => {
   try {
@@ -86,11 +82,9 @@ router.get('/', async (req, res) => {
       if (!product) {
         return res.status(404).json({ message: 'Product not found' });
       }
-      products = [addImageURL(product, req)]; // Convert single product to array
     } else {
-      products = await Product.find();
-      // Modify each product to include the full URL of the image
-      products = products.map(product => addImageURL(product, req));
+      const category = req.query.category;
+      products = await Product.find({ category });
     }
     res.json(products);
   } catch (err) {
@@ -106,7 +100,7 @@ router.post('/', upload.array('images', 4), async (req, res) => { // 'images' is
   try {
     let imagePaths = []; // Initialize an array to hold image paths
     const files = req.files; // Assume the files are available in req.files 
-    
+
     // Check if req.files is present (files upload)
     if (files) {
       // Upload images to Firebase and get the URLs
@@ -135,7 +129,7 @@ router.post('/', upload.array('images', 4), async (req, res) => { // 'images' is
 //Update a product
 router.put('/', async (req, res) => {
   const productsrno = req.query.productsrno;
-  
+
   try {
     // Find the product by SR number
     const product = await Product.findOne({ productsrno: productsrno });
@@ -149,14 +143,14 @@ router.put('/', async (req, res) => {
     product.category = req.body.category;
     product.price = req.body.price;
     product.quantity = req.body.quantity;
-    
+
     let imagePaths = [];
 
     if (req.files) {
       imagePaths = req.files.map(file => '/public/uploads/' + file.filename); // Assuming uploads directory is used to store images
     }
 
-    product.images= imagePaths;
+    product.images = imagePaths;
 
     // Save the updated product
     const updatedProduct = await product.save();
@@ -191,9 +185,9 @@ router.delete('/', async (req, res) => {
 // Bulk upload products
 
 router.post('/bulk-export', memoryUpload.single('file'), (req, res) => {
-  
+
   const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-  
+
   const sheetName = workbook.SheetNames[0];
 
   const excelData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
@@ -206,28 +200,43 @@ router.post('/bulk-export', memoryUpload.single('file'), (req, res) => {
     return product;
   });
 
-  
+
   Product.insertMany(productsData)
-      .then(() => {
-          res.status(200).send('Data uploaded successfully');
-      })
-      .catch(err => {
-          res.status(500).send('Error uploading data');
-      });
+    .then(() => {
+      res.status(200).send('Data uploaded successfully');
+    })
+    .catch(err => {
+      res.status(500).send('Error uploading data');
+    });
 });
 
 router.get('/:id', async (req, res) => {
-  const productId = req.params.id;
+  
   try {
     const productId = req.params.id;
     const product = await Product.findById(productId);
-
-    console.log(product);
     
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-    res.json(product);
+
+    const userEmail = req.query.email; // Assuming same email for wishlist and cart
+
+    let isWishlisted =false;
+    let isAddedToCart = false;
+    if(userEmail){
+      const user = await User.findOne({ email: userEmail })
+      isWishlisted = user ? user.wishlist.includes(productId) : false // Check wishlist if user found
+      isAddedToCart = user? user.cart.includes(productId) :false
+    }
+
+    const response = {
+      product, // Include product details in all responses
+      isWishlisted: isWishlisted , // Default to false if email not provided or wishlist not found
+      isAddedToCart: isAddedToCart
+    };
+
+    res.json(response);
   } catch (error) {
     console.error('Error fetching product details:', error);
     res.status(500).json({ message: 'Internal Server Error' });

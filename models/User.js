@@ -28,28 +28,33 @@ const userSchema = new mongoose.Schema({
     required: false
   },
   country: {
-    type:String,
-    required:false
+    type: String,
+    required: false
   },
   streetAddress: {
-    type:String,
-    required:false
+    type: String,
+    required: false
   },
   city: {
-    type:String,
-    required:false
+    type: String,
+    required: false
   },
   region: {
-    type:String,
-    required:false
+    type: String,
+    required: false
   },
   postalCode: {
-    type:String,
-    required:false
+    type: String,
+    required: false
   },
   phone: {
-    type:Number,
-    required:false
+    type: Number,
+    required: false
+  },
+  wishlist: {
+    type: [mongoose.Schema.Types.ObjectId],
+    default: [],
+    ref: 'Product' // Reference to the Product model
   }
 });
 

@@ -18,10 +18,9 @@ app.use(cors());
 // Routes
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/users', require('./routes/usersRoutes'));
+app.use('/api/verifiedUsers', require('./routes/verifiedUserRoutes'));
 
-app.use('/uploads', express.static('public/uploads'));
 
- 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
@@ -30,13 +29,15 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 mongoose.connection.on('connected', () => {
   console.log('Connected to MongoDB');
+
+  // Start server
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+
 });
 
 
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
 
 
