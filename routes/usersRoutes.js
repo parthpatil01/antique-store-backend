@@ -6,39 +6,8 @@ const twilio = require('twilio');
 //for users 
 const nodemailer = require('nodemailer');
 const randomstring = require('randomstring');
-const Razorpay = require('razorpay');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
-
-// Route for razorpay
-router.post('/payment', async (req, res) => {
-
-  const instance = new Razorpay({
-    key_id: 'rzp_test_MAXrsoXKMVp7oy',
-    key_secret: 'xtRyj8dP9oEl5cyBT3FOdyOe',
-  });
-
-  try {
-    // Check if req.file is present (file upload)
-    var options = {
-      amount: req.body.amount,  // amount in the smallest currency unit
-      currency: "INR",
-      receipt: "order_rcptid_11"
-    };
-
-    const order = await instance.orders.create(options);
-
-    if (!order) return res.status(500).send("Some error occured");
-
-    res.json(order);
-
-
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
 
 
 
@@ -47,7 +16,7 @@ router.post('/register', async (req, res) => {
 
   try {
 
-    const saltRounds = 10; 
+    const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(req.body.password, saltRounds);
 
     // Check if req.file is present (file upload)
@@ -91,19 +60,19 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-        // Generate a JWT token upon successful authentication
-        const payload = {
-          userId: user._id, // Include user ID for authorization purposes
-          email: user.email,  // Optional: Include relevant user information
-        };
-        const token = jwt.sign(payload, process.env.JWT_SECRET); // Replace with your JWT generation function
-    
-        // Send a success response with the JWT token
-        res.status(200).json({
-          message: "Login successful",
-          token,
-          email
-        });
+    // Generate a JWT token upon successful authentication
+    const payload = {
+      userId: user._id, // Include user ID for authorization purposes
+      email: user.email,  // Optional: Include relevant user information
+    };
+    const token = jwt.sign(payload, process.env.JWT_SECRET); // Replace with your JWT generation function
+
+    // Send a success response with the JWT token
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      email
+    });
 
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
@@ -307,7 +276,7 @@ router.post('/mobileverify-otp', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
 
-    const user = await User.findOne({ email: 'lilasa9841@minhlun.com' });
+    const user = await User.findOne({ email: 'patilvparth15@gmail.com' });
     if (!user) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -323,10 +292,10 @@ router.get('/', async (req, res) => {
 //update user info
 router.post('/update-user', async (req, res) => {
   const updatedUserInfo = req.body; // Assuming the entire user object is sent in the request body
-  console.log(updatedUserInfo)
+
   try {
     // Update user information in the database
-    const updatedUser = await User.findOneAndUpdate({ email: 'lilasa9841@minhlun.com' }, updatedUserInfo, { new: true });
+    const updatedUser = await User.findOneAndUpdate({ email: updatedUserInfo.email }, updatedUserInfo, { new: true });
     if (!updatedUser) {
       return res.status(404).send('User not found');
     }
@@ -423,6 +392,7 @@ router.post('/add-item', async (req, res) => {
   res.status(200).json({ message: "update successful", user: upadteduser });
 
 });
+
 
 
 module.exports = router;
