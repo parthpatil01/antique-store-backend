@@ -273,18 +273,18 @@ router.post('/mobileverify-otp', async (req, res) => {
 });
 
 //get user info
-router.get('/', async (req, res) => {
+router.post('/', async (req, res) => {
   try {
-
-    const user = await User.findOne({ email: 'patilvparth15@gmail.com' });
+    const email = req.body.email;
+    const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: 'Product not found' });
+      return res.status(404).json({ message: 'User not found' });
     }
 
 
     res.json(user);
   } catch (err) {
-    console.error('Error fetching products:', err);
+    console.error('Error fetching User:', err);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });

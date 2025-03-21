@@ -132,7 +132,7 @@ const getWishlist = async (req, res) => {
 const getCartItems = async (req, res) => {
 
     const { email } = req.body;
-
+    console.log(email);
     try {
 
         // Find the user by email
